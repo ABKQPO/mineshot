@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+FMLCorePluginContainsFMLMod: true
+FMLAT: mineshot_at.cfg
+FMLCorePlugin: info.ata4.minecraft.mineshot.asm.EarlyCoreMod
