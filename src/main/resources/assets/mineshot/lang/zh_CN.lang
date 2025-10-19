@@ -1,0 +1,38 @@
+# 键位
+key.categories.mineshot=Mineshot（高清截图）
+
+key.mineshot.capture=拍摄超大截图
+key.mineshot.ortho.toggle=切换相机模式
+key.mineshot.ortho.zoom_in=相机放大
+key.mineshot.ortho.zoom_out=相机缩小
+key.mineshot.ortho.rotate_l=相机左转
+key.mineshot.ortho.rotate_r=相机右转
+key.mineshot.ortho.rotate_u=相机向上转
+key.mineshot.ortho.rotate_d=相机向下转
+key.mineshot.ortho.rotate_t=相机俯视
+key.mineshot.ortho.rotate_f=相机前视
+key.mineshot.ortho.rotate_s=相机侧视
+key.mineshot.ortho.clip=切换相机裁剪
+
+mineshot.orthomp=多人游戏中不支持正交视角
+
+# 界面
+mineshot.gui.title=Mineshot 设置
+mineshot.gui.filesize=文件大小：%s
+mineshot.gui.warn.tiled=需要分块渲染！
+mineshot.gui.warn.shaders=像素着色器可能无法正常工作！
+mineshot.gui.warn.gui=界面无法被捕获！
+mineshot.gui.err.toolarge.targa=文件格式过大！
+
+# 配置
+mineshot.config.captureWidth=宽度
+mineshot.config.captureWidth.tooltip=截图捕获宽度
+
+mineshot.config.captureHeight=高度
+mineshot.config.captureHeight.tooltip=截图捕获高度
+
+mineshot.config.captureTiled=分块渲染
+mineshot.config.captureTiled.tooltip=通过多张小截图拼接生成大截图。这允许捕获比通常更大的截图，但可能导致着色器异常，并且会禁用界面。
+
+mineshot.config.preloadChunks=区块预加载
+mineshot.config.preloadChunks.tooltip=在截图前完整加载所有可见区块。

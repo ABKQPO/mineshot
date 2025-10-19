@@ -1,13 +1,14 @@
-/*
- ** 2013 April 15
- **
- ** The author disclaims copyright to this source code.  In place of
- ** a legal notice, here is a blessing:
- **    May you do good and not evil.
- **    May you find forgiveness for yourself and forgive others.
- **    May you share freely, never taking more than you give.
- */
 package info.ata4.minecraft.mineshot.client;
+
+import static org.lwjgl.opengl.GL11.*;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ActiveRenderInfo;
+import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.util.MathHelper;
+import net.minecraftforge.client.event.EntityViewRenderEvent;
+
+import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -16,48 +17,62 @@ import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import info.ata4.minecraft.mineshot.client.util.ChatUtils;
 import info.ata4.minecraft.mineshot.util.reflection.EntityRendererAccessor;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.util.MathHelper;
-import net.minecraftforge.client.event.EntityViewRenderEvent;
 
-import org.lwjgl.input.Keyboard;
-import static org.lwjgl.opengl.GL11.*;
-
-/**
- * Key handler for keys that control the orthographic camera.
- * 
- * @author Nico Bergemann <barracuda415 at yahoo.de>
- */
 public class OrthoViewHandler {
-    
+
     private static final Minecraft MC = Minecraft.getMinecraft();
     private static final String KEY_CATEGORY = "key.categories.mineshot";
     private static final float ZOOM_STEP = 0.5f;
     private static final float ROTATE_STEP = 15;
-    private static final float SECONDS_PER_TICK = 1f/20f;
-    
-    private final KeyBinding keyToggle = new KeyBinding("key.mineshot.ortho.toggle", Keyboard.KEY_NUMPAD5, KEY_CATEGORY);
+    private static final float SECONDS_PER_TICK = 1f / 20f;
+
+    private final KeyBinding keyToggle = new KeyBinding(
+        "key.mineshot.ortho.toggle",
+        Keyboard.KEY_NUMPAD5,
+        KEY_CATEGORY);
     private final KeyBinding keyZoomIn = new KeyBinding("key.mineshot.ortho.zoom_in", Keyboard.KEY_ADD, KEY_CATEGORY);
-    private final KeyBinding keyZoomOut = new KeyBinding("key.mineshot.ortho.zoom_out", Keyboard.KEY_SUBTRACT, KEY_CATEGORY);
-    private final KeyBinding keyRotateL = new KeyBinding("key.mineshot.ortho.rotate_l", Keyboard.KEY_NUMPAD4, KEY_CATEGORY);
-    private final KeyBinding keyRotateR = new KeyBinding("key.mineshot.ortho.rotate_r", Keyboard.KEY_NUMPAD6, KEY_CATEGORY);
-    private final KeyBinding keyRotateU = new KeyBinding("key.mineshot.ortho.rotate_u", Keyboard.KEY_NUMPAD8, KEY_CATEGORY);
-    private final KeyBinding keyRotateD = new KeyBinding("key.mineshot.ortho.rotate_d", Keyboard.KEY_NUMPAD2, KEY_CATEGORY);
-    private final KeyBinding keyRotateT = new KeyBinding("key.mineshot.ortho.rotate_t", Keyboard.KEY_NUMPAD7, KEY_CATEGORY);
-    private final KeyBinding keyRotateF = new KeyBinding("key.mineshot.ortho.rotate_f", Keyboard.KEY_NUMPAD1, KEY_CATEGORY);
-    private final KeyBinding keyRotateS = new KeyBinding("key.mineshot.ortho.rotate_s", Keyboard.KEY_NUMPAD3, KEY_CATEGORY);
+    private final KeyBinding keyZoomOut = new KeyBinding(
+        "key.mineshot.ortho.zoom_out",
+        Keyboard.KEY_SUBTRACT,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateL = new KeyBinding(
+        "key.mineshot.ortho.rotate_l",
+        Keyboard.KEY_NUMPAD4,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateR = new KeyBinding(
+        "key.mineshot.ortho.rotate_r",
+        Keyboard.KEY_NUMPAD6,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateU = new KeyBinding(
+        "key.mineshot.ortho.rotate_u",
+        Keyboard.KEY_NUMPAD8,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateD = new KeyBinding(
+        "key.mineshot.ortho.rotate_d",
+        Keyboard.KEY_NUMPAD2,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateT = new KeyBinding(
+        "key.mineshot.ortho.rotate_t",
+        Keyboard.KEY_NUMPAD7,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateF = new KeyBinding(
+        "key.mineshot.ortho.rotate_f",
+        Keyboard.KEY_NUMPAD1,
+        KEY_CATEGORY);
+    private final KeyBinding keyRotateS = new KeyBinding(
+        "key.mineshot.ortho.rotate_s",
+        Keyboard.KEY_NUMPAD3,
+        KEY_CATEGORY);
     private final KeyBinding keyClip = new KeyBinding("key.mineshot.ortho.clip", Keyboard.KEY_MULTIPLY, KEY_CATEGORY);
-    
+
     private boolean enabled;
     private boolean freeCam;
     private boolean clip;
-    
+
     private float zoom;
     private float xRot;
     private float yRot;
-    
+
     private int tick;
     private int tickPrevious;
     private double partialPrevious;
@@ -74,14 +89,14 @@ public class OrthoViewHandler {
         ClientRegistry.registerKeyBinding(keyRotateF);
         ClientRegistry.registerKeyBinding(keyRotateS);
         ClientRegistry.registerKeyBinding(keyClip);
-        
+
         reset();
     }
- 
+
     private void reset() {
         freeCam = false;
         clip = false;
-        
+
         zoom = 8;
         xRot = 30;
         yRot = -45;
@@ -93,11 +108,11 @@ public class OrthoViewHandler {
     public boolean isEnabled() {
         return enabled;
     }
-    
+
     public void enable() {
         if (!enabled) {
             reset();
-            
+
             // disable in multiplayer
             // Of course, programmers could just delete this check and abuse the
             // orthographic camera, but at least the official build won't support it
@@ -106,14 +121,14 @@ public class OrthoViewHandler {
                 return;
             }
         }
-        
+
         enabled = true;
     }
-    
+
     public void disable() {
         enabled = false;
     }
-    
+
     public void toggle() {
         if (isEnabled()) {
             disable();
@@ -121,21 +136,21 @@ public class OrthoViewHandler {
             enable();
         }
     }
-    
+
     private boolean modifierKeyPressed() {
         return Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
     }
-    
+
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent evt) {
         boolean mod = modifierKeyPressed();
-        
-        if (keyToggle.getIsKeyPressed()) {
+
+        if (keyToggle.isPressed()) {
             if (mod) {
                 freeCam = !freeCam;
             } else {
                 toggle();
-            } 
+            }
         } else if (keyClip.getIsKeyPressed()) {
             clip = !clip;
         } else if (keyRotateT.getIsKeyPressed()) {
@@ -154,18 +169,18 @@ public class OrthoViewHandler {
             xRot -= xRot % ROTATE_STEP;
             yRot -= yRot % ROTATE_STEP;
             zoom -= zoom % ZOOM_STEP;
-            
+
             updateZoomAndRotation(1);
         }
     }
-    
+
     private void updateZoomAndRotation(double multi) {
         if (keyZoomIn.getIsKeyPressed()) {
             zoom *= 1 - ZOOM_STEP * multi;
         } else if (keyZoomOut.getIsKeyPressed()) {
             zoom *= 1 + ZOOM_STEP * multi;
         }
-        
+
         if (keyRotateL.getIsKeyPressed()) {
             yRot += ROTATE_STEP * multi;
         } else if (keyRotateR.getIsKeyPressed()) {
@@ -178,33 +193,33 @@ public class OrthoViewHandler {
             xRot -= ROTATE_STEP * multi;
         }
     }
-    
+
     @SubscribeEvent
     public void onTick(ClientTickEvent evt) {
         if (!enabled) {
             return;
         }
-        
+
         if (evt.phase != Phase.START) {
             return;
         }
-        
+
         tick++;
     }
-    
+
     @SubscribeEvent
     public void onFogDensity(EntityViewRenderEvent.FogDensity evt) {
         if (!enabled) {
             return;
         }
-        
+
         // update zoom and rotation
         if (!modifierKeyPressed()) {
             int ticksElapsed = tick - tickPrevious;
             double elapsed = ticksElapsed + (evt.renderPartialTicks - partialPrevious);
             elapsed *= SECONDS_PER_TICK;
             updateZoomAndRotation(elapsed);
-            
+
             tickPrevious = tick;
             partialPrevious = evt.renderPartialTicks;
         }

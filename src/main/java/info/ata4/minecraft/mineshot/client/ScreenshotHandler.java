@@ -1,13 +1,17 @@
-/*
- ** 2014 January 21
- **
- ** The author disclaims copyright to this source code.  In place of
- ** a legal notice, here is a blessing:
- **    May you do good and not evil.
- **    May you find forgiveness for yourself and forgive others.
- **    May you share freely, never taking more than you give.
- */
 package info.ata4.minecraft.mineshot.client;
+
+import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.settings.KeyBinding;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -20,47 +24,33 @@ import info.ata4.minecraft.mineshot.client.config.MineshotConfig;
 import info.ata4.minecraft.mineshot.client.config.MineshotConfigGuiIngame;
 import info.ata4.minecraft.mineshot.client.util.ChatUtils;
 import info.ata4.minecraft.mineshot.util.reflection.RenderGlobalAccessor;
-import java.io.File;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.settings.KeyBinding;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.lwjgl.input.Keyboard;
 
-/**
- *
- * @author Nico Bergemann <barracuda415 at yahoo.de>
- */
 public class ScreenshotHandler {
-    
+
     private static final Minecraft MC = Minecraft.getMinecraft();
     private static final Logger L = LogManager.getLogger();
     private static final String KEY_CATEGORY = "key.categories.mineshot";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH.mm.ss");
-    
+
     private final KeyBinding keyCapture = new KeyBinding("key.mineshot.capture", Keyboard.KEY_F9, KEY_CATEGORY);
     private final MineshotConfig config;
-    
+
     private File taskFile;
     private RenderTickTask task;
 
     public ScreenshotHandler(MineshotConfig config) {
         this.config = config;
-        
+
         ClientRegistry.registerKeyBinding(keyCapture);
     }
-    
+
     @SubscribeEvent
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         // don't poll keys when there's an active task
         if (task != null) {
             return;
         }
-        
+
         if (keyCapture.isPressed()) {
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
                 MC.displayGuiScreen(new MineshotConfigGuiIngame(config));
@@ -77,13 +67,13 @@ public class ScreenshotHandler {
             }
         }
     }
-    
+
     @SubscribeEvent
     public void onRenderTick(RenderTickEvent evt) {
         if (task == null) {
             return;
         }
-        
+
         try {
             if (task.onRenderTick(evt)) {
                 task = null;
@@ -95,7 +85,7 @@ public class ScreenshotHandler {
             task = null;
         }
     }
-    
+
     private void preloadChunks() {
         WorldRenderer[] worldRenderers = RenderGlobalAccessor.getWorldRenderers(MC.renderGlobal);
         for (WorldRenderer worldRenderer : worldRenderers) {
@@ -110,15 +100,14 @@ public class ScreenshotHandler {
         if (!dir.exists()) {
             dir.mkdir();
         }
-        
+
         File file;
         String fileName = "huge_" + DATE_FORMAT.format(new Date());
-        String fileExt = "tga";
-        
+        String fileExt = "png";
+
         // loop though suffixes while the file exists
-        for (int i = 1; (file = new File(dir, fileName + (i != 1 ? "_" + i : "") + "." + fileExt)).exists(); i++) {
-        }
-        
+        for (int i = 1; (file = new File(dir, fileName + (i != 1 ? "_" + i : "") + "." + fileExt)).exists(); i++) {}
+
         return file;
     }
 }

@@ -1,70 +1,78 @@
-/*
- ** 2014 August 20
- **
- ** The author disclaims copyright to this source code. In place of
- ** a legal notice, here is a blessing:
- **    May you do good and not evil.
- **    May you find forgiveness for yourself and forgive others.
- **    May you share freely, never taking more than you give.
- */
 package info.ata4.minecraft.mineshot.client.capture;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.channels.FileChannel;
-import org.apache.commons.io.IOUtils;
+
+import javax.imageio.ImageIO;
+
 import org.lwjgl.util.Dimension;
 
-/**
- *
- * @author Nico Bergemann <barracuda415 at yahoo.de>
- */
 public class FramebufferWriter {
-    
-    protected static final int HEADER_SIZE = 18;
-    
-    protected final FramebufferCapturer fbc;
-    protected final File file;
 
-    public FramebufferWriter(File file, FramebufferCapturer fbc) throws FileNotFoundException, IOException {
+    protected static int HEADER_SIZE = 18;
+
+    protected FramebufferCapturer fbc;
+    protected File file;
+
+    public FramebufferWriter(File file, FramebufferCapturer fbc) {
         this.file = file;
         this.fbc = fbc;
     }
-    
+
     public void write() throws IOException {
-        fbc.setFlipColors(true);
-        fbc.setFlipLines(false);
+        fbc.setFlipColors(false);
+        fbc.setFlipLines(true);
         fbc.capture();
-        
+
         Dimension dim = fbc.getCaptureDimension();
-        ByteBuffer bbHeader = buildTargaHeader(dim.getWidth(), dim.getHeight(),
-                fbc.getBytesPerPixel() * 8);
-        ByteBuffer bbData = fbc.getByteBuffer();
-        
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(file);
-            FileChannel fc = fos.getChannel();
-            fc.write(bbHeader);
-            fc.write(bbData);
-        } finally {
-            IOUtils.closeQuietly(fos);
+        int width = dim.getWidth();
+        int height = dim.getHeight();
+        int bpp = fbc.getBytesPerPixel(); // should be 3 (RGB)
+
+        ByteBuffer buffer = fbc.getByteBuffer();
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        byte[] pixels = new byte[width * height * bpp];
+        buffer.get(pixels);
+
+        int index = 0;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int r = pixels[index++] & 0xFF;
+                int g = pixels[index++] & 0xFF;
+                int b = pixels[index++] & 0xFF;
+                int rgb = (r << 16) | (g << 8) | b;
+                image.setRGB(x, y, rgb);
+            }
         }
+
+        if (file.getName()
+            .toLowerCase()
+            .endsWith(".tga")) {
+            String newName = file.getName()
+                .substring(
+                    0,
+                    file.getName()
+                        .length() - 4)
+                + ".png";
+            file = new File(file.getParentFile(), newName);
+        }
+
+        ImageIO.write(image, "png", file);
     }
-    
+
     protected ByteBuffer buildTargaHeader(int width, int height, int bpp) {
         ByteBuffer bb = ByteBuffer.allocate(HEADER_SIZE);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.position(2);
-        bb.put((byte) 2); // image type - uncompressed true-color image
+        bb.put((byte) 2);
         bb.position(12);
         bb.putShort((short) (width & 0xffff));
         bb.putShort((short) (height & 0xffff));
-        bb.put((byte) (bpp & 0xff)); // bits per pixel
+        bb.put((byte) (bpp & 0xff));
         bb.rewind();
         return bb;
     }

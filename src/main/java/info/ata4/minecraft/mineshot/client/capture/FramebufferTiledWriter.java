@@ -1,63 +1,48 @@
-/*
- ** 2014 August 19
- **
- ** The author disclaims copyright to this source code. In place of
- ** a legal notice, here is a blessing:
- **    May you do good and not evil.
- **    May you find forgiveness for yourself and forgive others.
- **    May you share freely, never taking more than you give.
- */
 package info.ata4.minecraft.mineshot.client.capture;
 
-import info.ata4.minecraft.mineshot.util.reflection.EntityRendererAccessor;
-import info.ata4.minecraft.mineshot.util.reflection.MinecraftAccessor;
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.List;
+
+import javax.imageio.ImageIO;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Timer;
-import org.apache.commons.io.IOUtils;
+
 import org.lwjgl.util.Dimension;
 
-/**
- *
- * @author Nico Bergemann <barracuda415 at yahoo.de>
- */
+import info.ata4.minecraft.mineshot.util.reflection.EntityRendererAccessor;
+import info.ata4.minecraft.mineshot.util.reflection.MinecraftAccessor;
+
 public class FramebufferTiledWriter extends FramebufferWriter {
-    
+
     private static final Minecraft MC = Minecraft.getMinecraft();
 
     private final int widthTiled;
     private final int heightTiled;
-    
+
     private boolean advancedOpengl;
     private boolean hideGUI;
-    
-    public FramebufferTiledWriter(File file, FramebufferCapturer fbc, int width, int height) throws FileNotFoundException, IOException {
+
+    public FramebufferTiledWriter(File file, FramebufferCapturer fbc, int width, int height) {
         super(file, fbc);
-        
         this.widthTiled = width;
         this.heightTiled = height;
     }
 
     private void modifySettings() {
-        // some chunks disappear while occlusion culling is active
         advancedOpengl = MC.gameSettings.advancedOpengl;
         MC.gameSettings.advancedOpengl = false;
 
-        // GUI will appear on each tile, so disable it
         hideGUI = MC.gameSettings.hideGUI;
         MC.gameSettings.hideGUI = true;
 
-        // disable entity frustum culling for all loaded entities
         if (MC.theWorld != null) {
-            for (Entity ent : (List<Entity>) MC.theWorld.loadedEntityList) {
+            for (Entity ent : MC.theWorld.loadedEntityList) {
                 ent.ignoreFrustumCheck = true;
                 ent.renderDistanceWeight = 16;
             }
@@ -68,97 +53,98 @@ public class FramebufferTiledWriter extends FramebufferWriter {
         MC.gameSettings.hideGUI = hideGUI;
         MC.gameSettings.advancedOpengl = advancedOpengl;
 
-        // enable entity frustum culling
         if (MC.theWorld != null) {
-            for (Entity ent : (List<Entity>) MC.theWorld.loadedEntityList) {
+            for (Entity ent : MC.theWorld.loadedEntityList) {
                 ent.ignoreFrustumCheck = false;
                 ent.renderDistanceWeight = 1;
             }
         }
     }
-    
+
     @Override
     public void write() throws IOException {
         Dimension dim = fbc.getCaptureDimension();
         int widthViewport = dim.getWidth();
         int heightViewport = dim.getHeight();
         int bpp = fbc.getBytesPerPixel();
-              
+
         double tilesX = widthTiled / (double) widthViewport;
         double tilesY = heightTiled / (double) heightViewport;
 
         int numTilesX = (int) Math.ceil(tilesX);
         int numTilesY = (int) Math.ceil(tilesY);
-        double camZoom = tilesX <= tilesY ? tilesY : tilesX;
-        
+        double camZoom = Math.max(tilesX, tilesY);
+
         EntityRenderer entityRenderer = MC.entityRenderer;
         Timer timer = MinecraftAccessor.getTimer(MC);
-        
+
         fbc.setFlipColors(true);
         fbc.setFlipLines(false);
-        
+
         modifySettings();
-        
-        long fileSize = (long) widthTiled * heightTiled * bpp + HEADER_SIZE;
-        ByteBuffer bbHeader = buildTargaHeader(widthTiled, heightTiled, bpp * 8);
-        
-        RandomAccessFile raf = null;
 
         try {
-            raf = new RandomAccessFile(file, "rw");
-            raf.setLength(fileSize);
-            
-            FileChannel fc = raf.getChannel();
-            fc.write(bbHeader);
-            
+            BufferedImage image = new BufferedImage(widthTiled, heightTiled, BufferedImage.TYPE_INT_RGB);
+            WritableRaster raster = image.getRaster();
+
             for (int y = 0; y < numTilesY; y++) {
                 for (int x = 0; x < numTilesX; x++) {
-                    // clip the captured frame if too big
                     int tileWidth = Math.min(widthViewport, widthTiled - (widthViewport * x));
                     int tileHeight = Math.min(heightViewport, heightTiled - (heightViewport * y));
 
-                    // update camera offset and zoom
                     double camOfsX = (widthTiled - widthViewport - (widthViewport * x) * 2) / (double) widthViewport;
-                    double camOfsY = (heightTiled - heightViewport - (heightViewport * (tilesY - y - 1)) * 2) / (double) heightViewport;
+                    double camOfsY = (heightTiled - heightViewport - (heightViewport * (tilesY - y - 1)) * 2)
+                        / (double) heightViewport;
 
                     EntityRendererAccessor.setCameraZoom(entityRenderer, camZoom);
                     EntityRendererAccessor.setCameraOffsetX(entityRenderer, camOfsX);
                     EntityRendererAccessor.setCameraOffsetY(entityRenderer, camOfsY);
 
-                    // render the tile
                     entityRenderer.updateCameraAndRender(timer == null ? 0 : timer.renderPartialTicks);
 
-                    // get framebuffer
                     fbc.capture();
                     ByteBuffer frameBuffer = fbc.getByteBuffer();
 
-                    // copy viewport buffer into the tile buffer, row by row
-                    for (int i = 0; i < tileHeight; i++) {
-                        // read row from viewport buffer
-                        frameBuffer.clear();
-                        frameBuffer.position(i * widthViewport * bpp);
-                        frameBuffer.limit((i * widthViewport + tileWidth) * bpp);
+                    byte[] pixels = new byte[tileWidth * tileHeight * bpp];
+                    frameBuffer.get(pixels, 0, tileWidth * tileHeight * bpp);
 
-                        // write row at tiled position
-                        long o1 = (long) widthTiled * i;
-                        long o2 = (long) widthTiled * heightViewport * y;
-                        long o3 = (long) widthViewport * x;
-                        fc.position((o1 + o2 + o3) * bpp + HEADER_SIZE);
-                        fc.write(frameBuffer);
+                    int index = 0;
+                    for (int ty = 0; ty < tileHeight; ty++) {
+                        for (int tx = 0; tx < tileWidth; tx++) {
+                            int destY = heightTiled - (y * heightViewport + ty) - 1;
+                            int destX = x * widthViewport + tx;
+
+                            // BGR → RGB
+                            int b = pixels[index++] & 0xFF;
+                            int g = pixels[index++] & 0xFF;
+                            int r = pixels[index++] & 0xFF;
+
+                            raster.setPixel(destX, destY, new int[] { r, g, b });
+                        }
                     }
                 }
             }
+
+            if (file.getName()
+                .toLowerCase()
+                .endsWith(".tga")) {
+                String newName = file.getName()
+                    .substring(
+                        0,
+                        file.getName()
+                            .length() - 4)
+                    + ".png";
+                file = new File(file.getParentFile(), newName);
+            }
+
+            ImageIO.write(image, "png", file);
+
         } finally {
-            // restore camera settings
             EntityRendererAccessor.setCameraZoom(entityRenderer, 1);
             EntityRendererAccessor.setCameraOffsetX(entityRenderer, 0);
             EntityRendererAccessor.setCameraOffsetY(entityRenderer, 0);
-            
-            // restore game settings
+
             restoreSettings();
-            
-            // close file
-            IOUtils.closeQuietly(raf);
         }
     }
 }

@@ -1,35 +1,23 @@
-/*
- ** 2012 March 30
- **
- ** The author disclaims copyright to this source code.  In place of
- ** a legal notice, here is a blessing:
- **    May you do good and not evil.
- **    May you find forgiveness for yourself and forgive others.
- **    May you share freely, never taking more than you give.
- */
 package info.ata4.minecraft.mineshot.util.reflection;
 
-import cpw.mods.fml.relauncher.ReflectionHelper;
 import java.lang.reflect.Method;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Timer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/**
- * Helper class to access private fields and methods from the Minecraft class.
- *
- * @author Nico Bergemann <barracuda415 at yahoo.de>
- */
+import cpw.mods.fml.relauncher.ReflectionHelper;
+
 public class MinecraftAccessor {
 
     private static final Logger L = LogManager.getLogger();
-    
-    private static final String[] FIELD_TIMER = new String[] {"timer", "field_71428_T"};
-    private static final String[] METHOD_RESIZE = new String[] {"resize", "func_71370_a"};
-    
-    private MinecraftAccessor() {
-    }
+
+    private static final String[] FIELD_TIMER = new String[] { "timer", "field_71428_T" };
+    private static final String[] METHOD_RESIZE = new String[] { "resize", "func_71370_a" };
+
+    private MinecraftAccessor() {}
 
     public static Timer getTimer(Minecraft mc) {
         try {
