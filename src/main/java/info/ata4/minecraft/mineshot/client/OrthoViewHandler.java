@@ -16,7 +16,7 @@ import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import info.ata4.minecraft.mineshot.client.util.ChatUtils;
-import info.ata4.minecraft.mineshot.util.reflection.EntityRendererAccessor;
+import info.ata4.minecraft.mineshot.mixins.early.AccessorEntityRenderer;
 
 public class OrthoViewHandler {
 
@@ -230,9 +230,11 @@ public class OrthoViewHandler {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
-        double cameraZoom = EntityRendererAccessor.getCameraZoom(MC.entityRenderer);
-        double cameraOfsX = EntityRendererAccessor.getCameraOffsetX(MC.entityRenderer);
-        double cameraOfsY = EntityRendererAccessor.getCameraOffsetY(MC.entityRenderer);
+        AccessorEntityRenderer entityRenderer = (AccessorEntityRenderer) MC.entityRenderer;
+
+        double cameraZoom = entityRenderer.getCameraZoom();
+        double cameraOfsX = entityRenderer.getCameraYaw();
+        double cameraOfsY = entityRenderer.getCameraPitch();
 
         if (cameraZoom != 1) {
             glTranslated(cameraOfsX, -cameraOfsY, 0);

@@ -23,7 +23,7 @@ import info.ata4.minecraft.mineshot.client.capture.task.RenderTickTask;
 import info.ata4.minecraft.mineshot.client.config.MineshotConfig;
 import info.ata4.minecraft.mineshot.client.config.MineshotConfigGuiIngame;
 import info.ata4.minecraft.mineshot.client.util.ChatUtils;
-import info.ata4.minecraft.mineshot.util.reflection.RenderGlobalAccessor;
+import info.ata4.minecraft.mineshot.mixins.early.AccessorRenderGlobal;
 
 public class ScreenshotHandler {
 
@@ -87,7 +87,7 @@ public class ScreenshotHandler {
     }
 
     private void preloadChunks() {
-        WorldRenderer[] worldRenderers = RenderGlobalAccessor.getWorldRenderers(MC.renderGlobal);
+        WorldRenderer[] worldRenderers = ((AccessorRenderGlobal) MC.renderGlobal).getWorldRenderers();
         for (WorldRenderer worldRenderer : worldRenderers) {
             if (worldRenderer.isInFrustum && worldRenderer.needsUpdate) {
                 worldRenderer.updateRenderer(MC.renderViewEntity);

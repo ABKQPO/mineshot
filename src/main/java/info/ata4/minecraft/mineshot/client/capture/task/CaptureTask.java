@@ -8,7 +8,6 @@ import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
 import info.ata4.minecraft.mineshot.client.capture.FramebufferCapturer;
 import info.ata4.minecraft.mineshot.client.capture.FramebufferWriter;
 import info.ata4.minecraft.mineshot.client.config.MineshotConfig;
-import info.ata4.minecraft.mineshot.util.reflection.MinecraftAccessor;
 
 public class CaptureTask implements RenderTickTask {
 
@@ -38,7 +37,7 @@ public class CaptureTask implements RenderTickTask {
                 int height = config.captureHeight.get();
 
                 // resize viewport/framebuffer
-                MinecraftAccessor.resize(MC, width, height);
+                MC.resize(width, height);
                 break;
 
             // capture screenshot and restore viewport size
@@ -49,7 +48,7 @@ public class CaptureTask implements RenderTickTask {
                     fbw.write();
                 } finally {
                     // restore viewport/framebuffer
-                    MinecraftAccessor.resize(MC, displayWidth, displayHeight);
+                    MC.resize(displayWidth, displayHeight);
                 }
                 break;
         }

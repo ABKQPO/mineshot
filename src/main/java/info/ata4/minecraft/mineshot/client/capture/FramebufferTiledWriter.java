@@ -9,14 +9,13 @@ import java.nio.ByteBuffer;
 import javax.imageio.ImageIO;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Timer;
 
 import org.lwjgl.util.Dimension;
 
-import info.ata4.minecraft.mineshot.util.reflection.EntityRendererAccessor;
-import info.ata4.minecraft.mineshot.util.reflection.MinecraftAccessor;
+import info.ata4.minecraft.mineshot.mixins.early.AccessorEntityRenderer;
+import info.ata4.minecraft.mineshot.mixins.early.AccessorMinecraft;
 
 public class FramebufferTiledWriter extends FramebufferWriter {
 
@@ -75,8 +74,8 @@ public class FramebufferTiledWriter extends FramebufferWriter {
         int numTilesY = (int) Math.ceil(tilesY);
         double camZoom = Math.max(tilesX, tilesY);
 
-        EntityRenderer entityRenderer = MC.entityRenderer;
-        Timer timer = MinecraftAccessor.getTimer(MC);
+        AccessorEntityRenderer entityRenderer = (AccessorEntityRenderer) MC.entityRenderer;
+        Timer timer = ((AccessorMinecraft) MC).getTimer();
 
         fbc.setFlipColors(true);
         fbc.setFlipLines(false);
@@ -96,11 +95,11 @@ public class FramebufferTiledWriter extends FramebufferWriter {
                     double camOfsY = (heightTiled - heightViewport - (heightViewport * (tilesY - y - 1)) * 2)
                         / (double) heightViewport;
 
-                    EntityRendererAccessor.setCameraZoom(entityRenderer, camZoom);
-                    EntityRendererAccessor.setCameraOffsetX(entityRenderer, camOfsX);
-                    EntityRendererAccessor.setCameraOffsetY(entityRenderer, camOfsY);
+                    entityRenderer.setCameraZoom(camZoom);
+                    entityRenderer.setCameraYaw(camOfsX);
+                    entityRenderer.setCameraPitch(camOfsY);
 
-                    entityRenderer.updateCameraAndRender(timer == null ? 0 : timer.renderPartialTicks);
+                    MC.entityRenderer.updateCameraAndRender(timer == null ? 0 : timer.renderPartialTicks);
 
                     fbc.capture();
                     ByteBuffer frameBuffer = fbc.getByteBuffer();
@@ -140,9 +139,9 @@ public class FramebufferTiledWriter extends FramebufferWriter {
             ImageIO.write(image, "png", file);
 
         } finally {
-            EntityRendererAccessor.setCameraZoom(entityRenderer, 1);
-            EntityRendererAccessor.setCameraOffsetX(entityRenderer, 0);
-            EntityRendererAccessor.setCameraOffsetY(entityRenderer, 0);
+            entityRenderer.setCameraZoom(1);
+            entityRenderer.setCameraYaw(0);
+            entityRenderer.setCameraPitch(0);
 
             restoreSettings();
         }
