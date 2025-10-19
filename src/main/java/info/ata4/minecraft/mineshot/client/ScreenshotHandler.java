@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.RenderTickEvent;
@@ -44,7 +45,7 @@ public class ScreenshotHandler {
         ClientRegistry.registerKeyBinding(keyCapture);
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onKeyInput(InputEvent.KeyInputEvent event) {
         // don't poll keys when there's an active task
         if (task != null) {
@@ -68,7 +69,7 @@ public class ScreenshotHandler {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onRenderTick(RenderTickEvent evt) {
         if (task == null) {
             return;
@@ -88,6 +89,7 @@ public class ScreenshotHandler {
 
     private void preloadChunks() {
         WorldRenderer[] worldRenderers = ((AccessorRenderGlobal) MC.renderGlobal).getWorldRenderers();
+        if (worldRenderers == null) return;
         for (WorldRenderer worldRenderer : worldRenderers) {
             if (worldRenderer.isInFrustum && worldRenderer.needsUpdate) {
                 worldRenderer.updateRenderer(MC.renderViewEntity);

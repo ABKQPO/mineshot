@@ -11,6 +11,7 @@ import net.minecraftforge.client.event.EntityViewRenderEvent;
 import org.lwjgl.input.Keyboard;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
@@ -141,7 +142,7 @@ public class OrthoViewHandler {
         return Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onKeyInput(InputEvent.KeyInputEvent evt) {
         boolean mod = modifierKeyPressed();
 
@@ -194,7 +195,7 @@ public class OrthoViewHandler {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onTick(ClientTickEvent evt) {
         if (!enabled) {
             return;
@@ -207,7 +208,7 @@ public class OrthoViewHandler {
         tick++;
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onFogDensity(EntityViewRenderEvent.FogDensity evt) {
         if (!enabled) {
             return;
