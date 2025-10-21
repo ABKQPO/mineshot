@@ -149,7 +149,7 @@ public class OrthoViewHandler {
             } else {
                 toggle();
             }
-        } else if (keyClip.getIsKeyPressed()) {
+        } else if (keyClip.isPressed()) {
             clip = !clip;
         } else if (keyRotateT.getIsKeyPressed()) {
             xRot = mod ? -90 : 90;
