@@ -3,9 +3,7 @@ package info.ata4.minecraft.mineshot.client;
 import static org.lwjgl.opengl.GL11.*;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.util.MathHelper;
 import net.minecraftforge.client.event.EntityViewRenderEvent;
 
 import org.lwjgl.input.Keyboard;
@@ -17,66 +15,65 @@ import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import info.ata4.minecraft.mineshot.client.util.ChatUtils;
-import info.ata4.minecraft.mineshot.mixins.early.AccessorEntityRenderer;
 
 public class OrthoViewHandler {
 
-    private static final Minecraft MC = Minecraft.getMinecraft();
-    private static final String KEY_CATEGORY = "key.categories.mineshot";
-    private static final float ZOOM_STEP = 0.5f;
-    private static final float ROTATE_STEP = 15;
-    private static final float SECONDS_PER_TICK = 1f / 20f;
+    public static Minecraft MC = Minecraft.getMinecraft();
+    public static String KEY_CATEGORY = "key.categories.mineshot";
+    public static double ZOOM_STEP = 0.5f;
+    public static double ROTATE_STEP = 15;
+    public static double SECONDS_PER_TICK = 1f / 20f;
 
-    private final KeyBinding keyToggle = new KeyBinding(
+    public static KeyBinding keyToggle = new KeyBinding(
         "key.mineshot.ortho.toggle",
         Keyboard.KEY_NUMPAD5,
         KEY_CATEGORY);
-    private final KeyBinding keyZoomIn = new KeyBinding("key.mineshot.ortho.zoom_in", Keyboard.KEY_ADD, KEY_CATEGORY);
-    private final KeyBinding keyZoomOut = new KeyBinding(
+    public static KeyBinding keyZoomIn = new KeyBinding("key.mineshot.ortho.zoom_in", Keyboard.KEY_ADD, KEY_CATEGORY);
+    public static KeyBinding keyZoomOut = new KeyBinding(
         "key.mineshot.ortho.zoom_out",
         Keyboard.KEY_SUBTRACT,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateL = new KeyBinding(
+    public static KeyBinding keyRotateL = new KeyBinding(
         "key.mineshot.ortho.rotate_l",
         Keyboard.KEY_NUMPAD4,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateR = new KeyBinding(
+    public static KeyBinding keyRotateR = new KeyBinding(
         "key.mineshot.ortho.rotate_r",
         Keyboard.KEY_NUMPAD6,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateU = new KeyBinding(
+    public static KeyBinding keyRotateU = new KeyBinding(
         "key.mineshot.ortho.rotate_u",
         Keyboard.KEY_NUMPAD8,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateD = new KeyBinding(
+    public static KeyBinding keyRotateD = new KeyBinding(
         "key.mineshot.ortho.rotate_d",
         Keyboard.KEY_NUMPAD2,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateT = new KeyBinding(
+    public static KeyBinding keyRotateT = new KeyBinding(
         "key.mineshot.ortho.rotate_t",
         Keyboard.KEY_NUMPAD7,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateF = new KeyBinding(
+    public static KeyBinding keyRotateF = new KeyBinding(
         "key.mineshot.ortho.rotate_f",
         Keyboard.KEY_NUMPAD1,
         KEY_CATEGORY);
-    private final KeyBinding keyRotateS = new KeyBinding(
+    public static KeyBinding keyRotateS = new KeyBinding(
         "key.mineshot.ortho.rotate_s",
         Keyboard.KEY_NUMPAD3,
         KEY_CATEGORY);
-    private final KeyBinding keyClip = new KeyBinding("key.mineshot.ortho.clip", Keyboard.KEY_MULTIPLY, KEY_CATEGORY);
+    public static KeyBinding keyClip = new KeyBinding("key.mineshot.ortho.clip", Keyboard.KEY_MULTIPLY, KEY_CATEGORY);
 
-    private boolean enabled;
-    private boolean freeCam;
-    private boolean clip;
+    public static boolean enabled;
+    public static boolean freeCam;
+    public static boolean clip;
 
-    private float zoom;
-    private float xRot;
-    private float yRot;
+    public static float zoom;
+    public static float xRot;
+    public static float yRot;
 
-    private int tick;
-    private int tickPrevious;
-    private double partialPrevious;
+    public static int tick;
+    public static int tickPrevious;
+    public static double partialPrevious;
 
     public OrthoViewHandler() {
         ClientRegistry.registerKeyBinding(keyToggle);
@@ -94,7 +91,7 @@ public class OrthoViewHandler {
         reset();
     }
 
-    private void reset() {
+    public static void reset() {
         freeCam = false;
         clip = false;
 
@@ -106,11 +103,11 @@ public class OrthoViewHandler {
         partialPrevious = 0;
     }
 
-    public boolean isEnabled() {
+    public static boolean isEnabled() {
         return enabled;
     }
 
-    public void enable() {
+    public static void enable() {
         if (!enabled) {
             reset();
 
@@ -126,11 +123,11 @@ public class OrthoViewHandler {
         enabled = true;
     }
 
-    public void disable() {
+    public static void disable() {
         enabled = false;
     }
 
-    public void toggle() {
+    public static void toggle() {
         if (isEnabled()) {
             disable();
         } else {
@@ -138,7 +135,7 @@ public class OrthoViewHandler {
         }
     }
 
-    private boolean modifierKeyPressed() {
+    public static boolean modifierKeyPressed() {
         return Keyboard.isKeyDown(Keyboard.KEY_LCONTROL);
     }
 
@@ -175,7 +172,7 @@ public class OrthoViewHandler {
         }
     }
 
-    private void updateZoomAndRotation(double multi) {
+    public static void updateZoomAndRotation(double multi) {
         if (keyZoomIn.getIsKeyPressed()) {
             zoom *= 1 - ZOOM_STEP * multi;
         } else if (keyZoomOut.getIsKeyPressed()) {
@@ -209,62 +206,5 @@ public class OrthoViewHandler {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onFogDensity(EntityViewRenderEvent.FogDensity evt) {
-        if (!enabled) {
-            return;
-        }
-
-        // update zoom and rotation
-        if (!modifierKeyPressed()) {
-            int ticksElapsed = tick - tickPrevious;
-            double elapsed = ticksElapsed + (evt.renderPartialTicks - partialPrevious);
-            elapsed *= SECONDS_PER_TICK;
-            updateZoomAndRotation(elapsed);
-
-            tickPrevious = tick;
-            partialPrevious = evt.renderPartialTicks;
-        }
-
-        float width = zoom * (MC.displayWidth / (float) MC.displayHeight);
-        float height = zoom;
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        AccessorEntityRenderer entityRenderer = (AccessorEntityRenderer) MC.entityRenderer;
-
-        double cameraZoom = entityRenderer.getCameraZoom();
-        double cameraOfsX = entityRenderer.getCameraYaw();
-        double cameraOfsY = entityRenderer.getCameraPitch();
-
-        if (cameraZoom != 1) {
-            glTranslated(cameraOfsX, -cameraOfsY, 0);
-            glScaled(cameraZoom, cameraZoom, 1);
-        }
-
-        glOrtho(-width, width, -height, height, clip ? 0 : -9999, 9999);
-
-        if (freeCam) {
-            // rotate the orthographic camera with the player view
-            xRot = MC.thePlayer.rotationPitch;
-            yRot = MC.thePlayer.rotationYaw - 180;
-        }
-
-        // set camera rotation
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glRotatef(xRot, 1, 0, 0);
-        glRotatef(yRot, 0, 1, 0);
-
-        // fix particle rotation
-        if (!freeCam) {
-            float pitch = xRot;
-            float yaw = yRot + 180;
-            ActiveRenderInfo.rotationX = MathHelper.cos(yaw * (float) Math.PI / 180f);
-            ActiveRenderInfo.rotationZ = MathHelper.sin(yaw * (float) Math.PI / 180f);
-            ActiveRenderInfo.rotationYZ = -ActiveRenderInfo.rotationZ * MathHelper.sin(pitch * (float) Math.PI / 180f);
-            ActiveRenderInfo.rotationXY = ActiveRenderInfo.rotationX * MathHelper.sin(pitch * (float) Math.PI / 180f);
-            ActiveRenderInfo.rotationXZ = MathHelper.cos(pitch * (float) Math.PI / 180f);
-        }
-    }
+    public void onFogDensity(EntityViewRenderEvent.FogDensity evt) {}
 }

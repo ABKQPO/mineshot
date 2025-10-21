@@ -9,7 +9,8 @@
   "client": [
     "AccessorEntityRenderer",
     "AccessorRenderGlobal",
-    "AccessorMinecraft"
+    "AccessorMinecraft",
+    "MixinEntityRenderer"
   ],
   "server": []
 }
