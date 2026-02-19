@@ -14,7 +14,6 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
-import info.ata4.minecraft.mineshot.client.util.ChatUtils;
 
 public class OrthoViewHandler {
 
@@ -110,14 +109,6 @@ public class OrthoViewHandler {
     public static void enable() {
         if (!enabled) {
             reset();
-
-            // disable in multiplayer
-            // Of course, programmers could just delete this check and abuse the
-            // orthographic camera, but at least the official build won't support it
-            if (!MC.isSingleplayer()) {
-                ChatUtils.print("mineshot.orthomp");
-                return;
-            }
         }
 
         enabled = true;
